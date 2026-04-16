@@ -1,26 +1,42 @@
-import React, { useState } from "react";
+import React from "react";
 import { View, Text, TouchableOpacity, Pressable } from "react-native";
 import { useAppStore } from "../store/useAppStore";
-import { GraduationCap, Code2, Settings } from "lucide-react-native";
+import { GraduationCap, Code2, Settings, Trash2 } from "lucide-react-native";
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
+import { AddTaskSheet } from "../components/AddTaskSheet";
+import BottomSheet from "@gorhom/bottom-sheet";
 
 export default function Index() {
-  const { mode, toggleMode, selectDay, setSelectDay } = useAppStore();
+  const {
+    mode,
+    toggleMode,
+    selectDay,
+    setSelectDay,
+    tasks,
+    habits,
+    toggleTaskComplete,
+    completeHabit,
+    removeTask,
+    removeHabit,
+  } = useAppStore();
   const isStudy = mode === "study";
 
-  const [tasks, setTasks] = useState([
-    { id: "1", title: "مهمة 1", completed: false },
-    { id: "2", title: "مهمة 2", completed: true },
-    { id: "3", title: "مهمة 3", completed: false },
-    { id: "4", title: "مهمة 4", completed: false },
-    { id: "5", title: "مهمة 5", completed: true },
-  ]);
+  const priorityRank = (priority: string | undefined) => {
+    if (priority === "high") return 3;
+    if (priority === "medium") return 2;
+    return 1;
+  };
 
-  const [habits, setHabits] = useState([
-      { id: "1", title: "اشرب لتر ماء 1", streak: 5 },
-      { id: "2", title: "اشرب لتر ماء 2", streak: 3 },
-  ]);
+  const sortedHabits = [...habits].sort(
+    (a, b) => priorityRank(b.priority) - priorityRank(a.priority),
+  );
+
+  const bottomSheetRef = React.useRef<BottomSheet>(null);
+
+  const openAddTaskSheet = () => {
+    bottomSheetRef.current?.snapToIndex(0);
+  };
 
   const generateMonthDays = () => {
     const now = new Date();
@@ -48,28 +64,13 @@ export default function Index() {
     item: { id: string; title: string; completed: boolean };
   }) => {
     return (
-      <Pressable
-        onPress={() =>
-          setTasks((prev) =>
-            prev.map((t) =>
-              t.id === item.id ? { ...t, completed: !t.completed } : t,
-            ),
-          )
-        }
-        className={`flex-row items-center p-2 mb-2 rounded-[24px] border ${
-          item.completed
-            ? "bg-gray-100 border-gray-200"
-            : isStudy
-              ? "bg-white border-study-primary/20"
-              : "bg-white border-coding-primary/20"
-        }`}
-        style={{
-          elevation: 2,
-          shadowColor: "#000",
-          shadowOpacity: 0.05,
-          shadowRadius: 10,
-        }}
-      >
+      <View className={`flex-row items-center justify-between mb-3 p-3 rounded-[30px] border ${
+        item.completed
+          ? "bg-gray-100 border-gray-200"
+          : isStudy
+            ? "bg-white border-study-primary/20"
+            : "bg-white border-coding-primary/20"
+      }`}>
         {/* أيقونة الحالة */}
         <View
           className={`w-10 h-10 rounded-full items-center justify-center ${
@@ -95,75 +96,107 @@ export default function Index() {
         </View>
 
         {/* زر إتمام سريع */}
-        <View
-          className={`w-6 h-6 rounded-md border-2 mx-5 ${item.completed ? "bg-green-500 border-green-500" : "border-gray-200"}`}
+        <Pressable onPress={() => toggleTaskComplete(item.id)}
+        className={`flex-row items-center p-1 mb-2 rounded-[24px] ${
+          item.completed
+            ? "bg-gray-100 border-gray-200"
+            : isStudy
+              ? "bg-white"
+              : "bg-white"
+        }`}
+          >
+          <View
+            className={`w-8 h-8 rounded-md border-2 mx-5 flex-row items-center justify-center ${item.completed ? "bg-green-500 border-green-500" : "border-gray-200"}`}
+          >
+            {item.completed && (
+              <Text className="text-white text-xs font-bold text-center">
+                ✓
+              </Text>
+            )}
+          </View>
+        </Pressable>
+
+        {/* زر الحذف */}
+        <TouchableOpacity
+          onPress={() => removeTask(item.id)}
+          className="w-10 h-10 rounded-full bg-red-500 items-center justify-center ml-2"
         >
-          {item.completed && (
-            <Text className="text-white text-xs font-bold text-center">✓</Text>
-          )}
-        </View>
-      </Pressable>
+          <Trash2 color="white" size={22} />
+        </TouchableOpacity>
+      </View>
     );
   };
 
-
- const renderHabits = ({
-  item,
-}: {
-  item: { id: string; title: string; streak: number };
-}) => {
-  return (
-    <Pressable
-      onPress={() => setHabits((prev) => prev.map((h) => (h.id === item.id ? { ...h, streak: h.streak + 1 } : h)))}
-      className={`flex-row justify-between items-center px-4 py-2 mb-3 rounded-[24px] border ${
-        isStudy
-          ? "bg-white border-study-primary/10"
-          : "bg-white border-coding-primary/10"
-      }`}
-      style={{
-        elevation: 2,
-        shadowColor: "#000",
-        shadowOpacity: 0.05,
-        shadowRadius: 10,
-      }}
-    >
-      {/* 1. أيقونة العادة (مثل شكل أيقونة المهمة) */}
-      <View
-        className={`w-10 h-10 rounded-full items-center justify-center ${
-          isStudy ? "bg-study-primary/10" : "bg-coding-primary/10"
+  const renderHabits = ({
+    item,
+  }: {
+    item: { id: string; title: string; streak: number; priority?: "low" | "medium" | "high" };
+  }) => {
+    return (
+      <Pressable
+        onPress={() => completeHabit(item.id)}
+        className={`flex-row justify-between items-center px-4 py-2 mb-3 rounded-[24px] border ${
+          isStudy
+            ? "bg-white border-study-primary/10"
+            : "bg-white border-coding-primary/10"
         }`}
+        style={{
+          elevation: 2,
+          shadowColor: "#000",
+          shadowOpacity: 0.05,
+          shadowRadius: 10,
+        }}
       >
-        {/* حطينا نار رمز للسلسلة أو تقدر تحط أي إيموجي */}
-        <Text className="text-lg">🔥</Text>
-      </View>
-
-      {/* 2. النصوص (العنوان والسلسلة) */}
-      <View className="mx-3 ml-3 flex-1">
-        <Text className="font-bold text-base text-gray-800">
-          {item.title}
-        </Text>
-        <Text className="text-gray-400 text-xs">
-          سلسلة النجاح: {item.streak} يوم
-        </Text>
-      </View>
-
-      {/* 3. زر تفاعلي صغير (اختياري: لتسجيل العادة لليوم) */}
-      <View
-        className={`py-1 px-3 rounded-lg ${
-          isStudy ? "bg-study-primary/10" : "bg-coding-primary/10"
-        }`}
-      >
-        <Text
-          className={`text-[10px] font-black text-left ${
-            isStudy ? "text-study-primary" : "text-coding-primary"
+        {/* 1. أيقونة العادة (مثل شكل أيقونة المهمة) */}
+        <View
+          className={`w-10 h-10 rounded-full items-center justify-center ${
+            isStudy ? "bg-study-primary/10" : "bg-coding-primary/10"
           }`}
         >
-          تم اليوم
-        </Text>
-      </View>
-    </Pressable>
-  );
-};
+          {/* حطينا نار رمز للسلسلة أو تقدر تحط أي إيموجي */}
+          <Text className="text-lg">🔥</Text>
+        </View>
+
+        {/* 2. النصوص (العنوان والسلسلة) */}
+        <View className="mx-3 ml-3 flex-1">
+          <Text className="font-bold text-base text-gray-800">
+            {item.title}
+          </Text>
+          <Text className="text-gray-400 text-xs mb-1">
+            سلسلة النجاح: {item.streak} يوم
+          </Text>
+          <View className="self-start rounded-full px-3 py-1 border border-gray-200 bg-gray-50">
+            <Text className="text-[10px] font-black uppercase text-gray-600">
+              {item.priority === "high" ? "عالية" : item.priority === "medium" ? "متوسطة" : "منخفضة"}
+            </Text>
+          </View>
+        </View>
+
+        {/* 3. زر تفاعلي صغير (اختياري: لتسجيل العادة لليوم) */}
+        <View
+          className={`py-1 px-3 rounded-lg ${
+            isStudy ? "bg-study-primary/10" : "bg-coding-primary/10"
+          }`}
+        >
+          <Text
+            className={`text-[10px] font-black text-left ${
+              isStudy ? "text-study-primary" : "text-coding-primary"
+            }`}
+          >
+            تم اليوم
+          </Text>
+        </View>
+
+        {/* زر الحذف */}
+        <Pressable
+          onPress={() => removeHabit(item.id)}
+          className="w-10 h-10 rounded-full bg-red-500 items-center justify-center ml-2"
+        >
+          <Trash2 color="white" size={22} />
+        </Pressable>
+      </Pressable>
+    );
+  };
 
   const daysData = generateMonthDays();
 
@@ -260,8 +293,6 @@ export default function Index() {
           showsHorizontalScrollIndicator={false}
           ItemSeparatorComponent={() => <View className="w-4" />}
         />
-
-        {/* عنوان الفلاش ليست */}
         <View className="flex-row justify-between items-center mt-6 mb-3 px-1">
           <Text
             className={`text-lg font-bold ${isStudy ? "text-indigo-900" : "text-emerald-900"}`}
@@ -297,13 +328,26 @@ export default function Index() {
         </View>
         <View className="h-64">
           <FlashList
-            data={habits.slice(0, 2)} // عرض فقط أول 2 عادات
+            data={sortedHabits.slice(0, 2)} // عرض فقط أول 2 عادات مرتبة حسب الأولوية
             renderItem={renderHabits} // طريقة عرض كل عادة
             keyExtractor={(item) => item.id}
             showsVerticalScrollIndicator={false}
           />
         </View>
+        {/* زر إضافة مهمة/عادة جديد */}
+        <TouchableOpacity
+          onPress={openAddTaskSheet}
+          className={`absolute bottom-6 right-6 w-16 h-16 rounded-full items-center justify-center ${
+            isStudy ? "bg-study-primary" : "bg-coding-primary"
+          }`}
+          style={{ elevation: 5 }}
+        >
+          <Text className="text-white text-3xl font-bold">+</Text>
+        </TouchableOpacity>
+
+        {/* --- مكون الـ Bottom Sheet لإضافة مهمة/عادة جديدة --- */}
       </View>
+      <AddTaskSheet ref={bottomSheetRef} mode={mode} />
     </View>
   );
 }
