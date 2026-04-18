@@ -1,11 +1,18 @@
-import React from "react";
-import { View, Text, TouchableOpacity, Pressable } from "react-native";
-import { useAppStore } from "../store/useAppStore";
+import React, { useRef, useState } from "react";
+import {
+  I18nManager,
+  View,
+  Text,
+  TouchableOpacity,
+  Pressable,
+} from "react-native";
+import { useAppStore, Task } from "../store/useAppStore";
 import { GraduationCap, Code2, Settings, Trash2 } from "lucide-react-native";
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
 import { AddTaskSheet } from "../components/AddTaskSheet";
-import BottomSheet from "@gorhom/bottom-sheet";
+import BottomSheet, { BottomSheetModal } from "@gorhom/bottom-sheet";
+import { DetailsSheet } from "./tasks/taskDetails";
 
 export default function Index() {
   const {
@@ -38,6 +45,14 @@ export default function Index() {
     bottomSheetRef.current?.snapToIndex(0);
   };
 
+  const detailsSheetRef = useRef<BottomSheetModal>(null);
+const [selectedId, setSelectedId] = useState<string | null>(null);
+
+const handleOpenDetails = (id: string) => {
+  setSelectedId(id);
+  detailsSheetRef.current?.present();
+};
+
   const generateMonthDays = () => {
     const now = new Date();
     const year = now.getFullYear();
@@ -58,83 +73,107 @@ export default function Index() {
     return days;
   };
 
-  const renderTasks = ({
-    item,
-  }: {
-    item: { id: string; title: string; completed: boolean };
-  }) => {
+  const renderTasks = ({ item }: { item: Task }) => {
+    const dueDateLabel = item.dueDate
+      ? new Date(item.dueDate).toLocaleDateString(
+          I18nManager.isRTL ? "ar-SA" : "en-US",
+          {
+            day: "numeric",
+            month: "short",
+          },
+        )
+      : "بدون تاريخ";
+
     return (
-      <View className={`flex-row items-center justify-between mb-3 p-3 rounded-[30px] border ${
-        item.completed
-          ? "bg-gray-100 border-gray-200"
-          : isStudy
-            ? "bg-white border-study-primary/20"
-            : "bg-white border-coding-primary/20"
-      }`}>
-        {/* أيقونة الحالة */}
+      <Pressable onPress={() => handleOpenDetails(item.id)}>
         <View
-          className={`w-10 h-10 rounded-full items-center justify-center ${
+          className={`flex-row items-center justify-between mb-3 p-3 rounded-[30px] border ${
             item.completed
-              ? "bg-gray-200"
+              ? "bg-gray-100 border-gray-200"
               : isStudy
-                ? "bg-study-primary/10"
-                : "bg-coding-primary/10"
+                ? "bg-white border-study-primary/20"
+                : "bg-white border-coding-primary/20"
           }`}
+          style={{
+            elevation: 2,
+            shadowColor: "#000",
+            shadowOpacity: 0.05,
+            shadowRadius: 10,
+          }}
         >
+          {/* أيقونة الحالة */}
           <View
-            className={`w-3 h-3 rounded-full ${item.completed ? "bg-gray-400" : isStudy ? "bg-study-primary" : "bg-coding-primary"}`}
-          />
-        </View>
-
-        <View className="flex-1 ml-3">
-          <Text
-            className={`font-bold text-base ${item.completed ? "line-through text-gray-500" : "text-gray-800"}`}
+            className={`w-10 h-10 rounded-full items-center justify-center ${
+              item.completed
+                ? "bg-gray-200"
+                : isStudy
+                  ? "bg-study-primary/10"
+                  : "bg-coding-primary/10"
+            }`}
           >
-            {item.title}
-          </Text>
-          <Text className="text-gray-400 text-xs">اليوم • 09:00 ص</Text>
-        </View>
-
-        {/* زر إتمام سريع */}
-        <Pressable onPress={() => toggleTaskComplete(item.id)}
-        className={`flex-row items-center p-1 mb-2 rounded-[24px] ${
-          item.completed
-            ? "bg-gray-100 border-gray-200"
-            : isStudy
-              ? "bg-white"
-              : "bg-white"
-        }`}
-          >
-          <View
-            className={`w-8 h-8 rounded-md border-2 mx-5 flex-row items-center justify-center ${item.completed ? "bg-green-500 border-green-500" : "border-gray-200"}`}
-          >
-            {item.completed && (
-              <Text className="text-white text-xs font-bold text-center">
-                ✓
-              </Text>
-            )}
+            <View
+              className={`w-3 h-3 rounded-full ${item.completed ? "bg-gray-400" : isStudy ? "bg-study-primary" : "bg-coding-primary"}`}
+            />
           </View>
-        </Pressable>
 
-        {/* زر الحذف */}
-        <TouchableOpacity
-          onPress={() => removeTask(item.id)}
-          className="w-10 h-10 rounded-full bg-red-500 items-center justify-center ml-2"
-        >
-          <Trash2 color="white" size={22} />
-        </TouchableOpacity>
-      </View>
+          <View className="flex-1 ml-3">
+            <Text
+              className={`font-bold text-base ${item.completed ? "line-through text-gray-500" : "text-gray-800"}`}
+            >
+              {item.title}
+            </Text>
+            <Text className="text-gray-600 text-xs">{dueDateLabel}</Text>
+          </View>
+
+          {/* زر إتمام سريع */}
+          <Pressable
+            onPress={() => toggleTaskComplete(item.id)}
+            className={`flex-row items-center p-1 mb-2 rounded-[24px] ${
+              item.completed
+                ? "bg-gray-100 border-gray-200"
+                : isStudy
+                  ? "bg-white"
+                  : "bg-white"
+            }`}
+          >
+            <View
+              className={`w-8 h-8 rounded-md border-2 mx-5 flex-row items-center justify-center ${item.completed ? "bg-green-500 border-green-500" : "border-gray-200"}`}
+            >
+              {item.completed && (
+                <Text className="text-white text-xs font-bold text-center">
+                  ✓
+                </Text>
+              )}
+            </View>
+          </Pressable>
+
+          {/* زر الحذف */}
+          <TouchableOpacity
+            onPress={() => removeTask(item.id)}
+            className="w-10 h-10 rounded-full bg-red-500 items-center justify-center ml-2"
+          >
+            <Trash2 color="white" size={20} />
+          </TouchableOpacity>
+        </View>
+      </Pressable>
     );
   };
 
   const renderHabits = ({
     item,
   }: {
-    item: { id: string; title: string; streak: number; priority?: "low" | "medium" | "high" };
+    item: {
+      id: string;
+      title: string;
+      streak: number;
+      priority?: "low" | "medium" | "high";
+    };
   }) => {
     return (
+
       <Pressable
         onPress={() => completeHabit(item.id)}
+        onPressIn={() => handleOpenDetails(item.id)}
         className={`flex-row justify-between items-center px-4 py-2 mb-3 rounded-[24px] border ${
           isStudy
             ? "bg-white border-study-primary/10"
@@ -166,8 +205,12 @@ export default function Index() {
             سلسلة النجاح: {item.streak} يوم
           </Text>
           <View className="self-start rounded-full px-3 py-1 border border-gray-200 bg-gray-50">
-            <Text className="text-[10px] font-black uppercase text-gray-600">
-              {item.priority === "high" ? "عالية" : item.priority === "medium" ? "متوسطة" : "منخفضة"}
+            <Text className="text-[8px] font-black uppercase text-gray-600">
+              {item.priority === "high"
+                ? "عالية"
+                : item.priority === "medium"
+                  ? "متوسطة"
+                  : "منخفضة"}
             </Text>
           </View>
         </View>
@@ -192,7 +235,7 @@ export default function Index() {
           onPress={() => removeHabit(item.id)}
           className="w-10 h-10 rounded-full bg-red-500 items-center justify-center ml-2"
         >
-          <Trash2 color="white" size={22} />
+          <Trash2 color="white" size={20} />
         </Pressable>
       </Pressable>
     );
@@ -308,7 +351,7 @@ export default function Index() {
         </View>
 
         {/* مكان الـ FlashList */}
-        <View className="h-40">
+        <View className="h-56">
           <FlashList
             data={tasks.slice(0, 2)} // عرض فقط أول 2 مهام
             renderItem={renderTasks} // طريقة عرض كل مهمة
@@ -348,6 +391,7 @@ export default function Index() {
         {/* --- مكون الـ Bottom Sheet لإضافة مهمة/عادة جديدة --- */}
       </View>
       <AddTaskSheet ref={bottomSheetRef} mode={mode} />
+      <DetailsSheet ref={detailsSheetRef} itemId={selectedId} />
     </View>
   );
 }
