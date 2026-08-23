@@ -287,10 +287,10 @@ export default function Settings() {
               <TouchableOpacity
                 onPress={increaseFontSize}
                 className={`min-w-10 min-h-10 px-2.5 py-1 rounded-full items-center justify-center mr-3 ${
-                  isDarkMode ? "bg-slate-800" : "bg-slate-100"
+                  isDarkMode ? mc.darkInteractiveText : "bg-slate-100"
                 }`}
               >
-                <Text className={`font-black text-lg ${titleText}`}>A+</Text>
+                <Text className={`font-black text-base ${titleText}`}>A+</Text>
               </TouchableOpacity>
               <Text className={`font-bold text-base ${titleText}`}>
                 {formatScale(fontScale)}
@@ -298,7 +298,7 @@ export default function Settings() {
               <TouchableOpacity
                 onPress={decreaseFontSize}
                 className={`min-w-10 min-h-10 px-2.5 py-1 rounded-full items-center justify-center ml-3 ${
-                  isDarkMode ? "bg-slate-800" : "bg-slate-100"
+                  isDarkMode ? mc.darkInteractiveText : "bg-slate-100"
                 }`}
               >
                 <Text className={`font-black text-base ${titleText}`}>A-</Text>

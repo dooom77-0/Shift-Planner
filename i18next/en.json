@@ -98,7 +98,7 @@
     "low": "Low",
     "none": "None"
   },
-  "common": {
+  "common": { 
     "viewAll": "View All",
     "Tasks": "Tasks",
     "Habits": "Habits",
@@ -199,5 +199,26 @@
     "suggestFeature": "Suggest a Feature",
     "developedBy": "Developed with ❤️ by Abdulrahman",
     "copyright": "All rights reserved © 2026"
+  },
+  "onboarding":{
+    "StuTitle": "Organize Your Daily Study Routine",
+    "StuDesc": "Log your tasks and create your own routine to ensure excellence and continuity in your academic subjects",
+    "DevTitle": "Dive into the World of Development",
+    "DevDesc": "Organize your coding time and learn your favorite programming languages to create your own ideas and applications",
+    "FaithTitle": "Your Faith and Quranic Journey",
+    "FaithDesc": "Follow your daily prayer and recitations from the Holy Quran with ease and interaction",
+    "Next": "Next",
+    "GetStarted": "Get Started"
+  },
+  "Auth":{
+    "SubTitleLogin":"Login to Your Study Path",
+    "SubTitleRegister":"Create Your Personal Profile on BrainCode",
+    "username":"Username",
+    "Email":"Email",
+    "Password":"Password",
+    "Login":"Login",
+    "Register":"Register",
+    "AlreadyHaveAccount":"Already have an account?",
+    "DontHaveAccount":"Don't have an account?"
   }
 }

@@ -19,8 +19,10 @@ import { useAppStore } from "@/store/useAppStore";
 import { useModeTheme, useModeClasses } from "@/src/theme";
 import { supabase } from "@/supabase";
 import CustomAlert from "@/components/CustomAlert";
+import { useTranslation } from "react-i18next";
 
 export default function Register() {
+  const { t } = useTranslation();
   const { isDarkMode, language } = useAppStore();
   const { palette } = useModeTheme();
   const mc = useModeClasses();
@@ -65,7 +67,7 @@ export default function Register() {
           display_name: trimmedUsername, // يظهر في عمود Display name بـ Supabase
           full_name: trimmedUsername,    // يدعم التوافق مع الأنظمة المختلفة
         },
-      },
+      }, 
     });
     if (authError) throw authError;
 
@@ -108,6 +110,8 @@ export default function Register() {
     primary: isDarkMode ? palette.interactive : palette.header,
     secondary: palette.secondary,
   };
+
+  const isRTL = language === "ar";
 
   const titleText = isDarkMode ? mc.darkInteractiveText : mc.textHeader;
   const subtitleText = isDarkMode ? mc.darkInteractiveText70 : mc.textHeader70;
@@ -177,8 +181,8 @@ export default function Register() {
               >
                 BrainCode
               </Text>
-              <Text className={`text-base mt-2 ${subtitleText}`}>
-                أنشئ ملفك الشخصي في BrainCode
+              <Text className={`text-base text-center mt-2 ${subtitleText}`}>
+                {t("Auth.SubTitleRegister")}
               </Text>
             </View>
 
@@ -189,7 +193,7 @@ export default function Register() {
               >
                 <TextInput
                   className={`flex-1 py-4 text-base ${inputAlign} ${inputText}`}
-                  placeholder="اسم المستخدم"
+                  placeholder={t("Auth.username")}
                   placeholderTextColor={placeholderColor}
                   value={username}
                   onChangeText={setUsername}
@@ -204,7 +208,7 @@ export default function Register() {
               >
                 <TextInput
                   className={`flex-1 py-4 text-base ${inputAlign} ${inputText}`}
-                  placeholder="البريد الإلكتروني"
+                  placeholder={t("Auth.Email")}
                   placeholderTextColor={placeholderColor}
                   value={email}
                   onChangeText={setEmail}
@@ -230,7 +234,7 @@ export default function Register() {
                 </TouchableOpacity>
                 <TextInput
                   className={`flex-1 py-4 text-base ${inputAlign} ${inputText}`}
-                  placeholder="كلمة المرور"
+                  placeholder={t("Auth.Password")}
                   placeholderTextColor={placeholderColor}
                   value={password}
                   onChangeText={setPassword}
@@ -265,20 +269,20 @@ export default function Register() {
                   <ActivityIndicator color={isDarkMode ? palette.onInteractive : "#ffffff"} />
                 ) : (
                   <Text className={`${buttonText} text-lg font-bold`}>
-                    تسجيل جديد
+                    {t("Auth.Register")}
                   </Text>
                 )}
               </LinearGradient>
             </TouchableOpacity>
 
             {/* Toggle */}
-            <View className="flex-row items-center justify-center mt-8">
-              <Text className={footerText}>لديك حساب بالفعل؟</Text>
+            <View className={`items-center justify-center mt-8 ${isRTL ? "flex-row" : "flex-row-reverse"}`}>
+              <Text className={footerText}>{t("Auth.AlreadyHaveAccount")}</Text>
               <TouchableOpacity
                 onPress={() => router.push("/Auth/Login")}
                 className="ml-2"
               >
-                <Text className={`font-bold ${linkText}`}>تسجيل الدخول</Text>
+                <Text className={`font-bold ${linkText} px-3`}>{t("Auth.Login")}</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>

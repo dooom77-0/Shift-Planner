@@ -19,8 +19,10 @@ import { useAppStore } from "@/store/useAppStore";
 import { useModeTheme, useModeClasses } from "@/src/theme";
 import { supabase } from "@/supabase";
 import CustomAlert from "@/components/CustomAlert";
+import { useTranslation } from "react-i18next";
 
 export default function Login() {
+  const { t } = useTranslation();
   const { isDarkMode, language } = useAppStore();
   const { palette } = useModeTheme();
   const mc = useModeClasses();
@@ -32,10 +34,12 @@ export default function Login() {
   const [alert, setAlert] = useState<{
     visible: boolean;
     title: string;
-    description: string;
+    description: string; 
     type: "success" | "error" | "info";
     navigateTo?: Href;
   }>({ visible: false, title: "", description: "", type: "info" });
+
+  const isRTL = language === "ar";
 
   /**
    * Signs the user in via Supabase Auth.
@@ -153,7 +157,7 @@ export default function Login() {
                 BrainCode
               </Text>
               <Text className={`text-base mt-2 ${subtitleText}`}>
-                تسجيل الدخول إلى مسار التعلم
+                {t("Auth.SubTitleLogin")}
               </Text>
             </View>
 
@@ -164,7 +168,7 @@ export default function Login() {
               >
                 <TextInput
                   className={`flex-1 py-4 text-base ${inputAlign} ${inputText}`}
-                  placeholder="البريد الإلكتروني"
+                  placeholder={t("Auth.Email")}
                   placeholderTextColor={placeholderColor}
                   value={email}
                   onChangeText={setEmail}
@@ -190,7 +194,7 @@ export default function Login() {
                 </TouchableOpacity>
                 <TextInput
                   className={`flex-1 py-4 text-base ${inputAlign} ${inputText}`}
-                  placeholder="كلمة المرور"
+                  placeholder={t("Auth.Password")}
                   placeholderTextColor={placeholderColor}
                   value={password}
                   onChangeText={setPassword}
@@ -225,20 +229,20 @@ export default function Login() {
                   <ActivityIndicator color={isDarkMode ? palette.onInteractive : "#ffffff"} />
                 ) : (
                   <Text className={`${buttonText} text-lg font-bold`}>
-                    تسجيل الدخول
+                    {t("Auth.Login")}
                   </Text>
                 )}
               </LinearGradient>
             </TouchableOpacity>
 
             {/* Toggle */}
-            <View className="flex-row items-center justify-center mt-8">
-              <Text className={footerText}>ليس لديك حساب؟</Text>
+            <View className={`items-center justify-center mt-8 ${isRTL ? "flex-row" : "flex-row-reverse"} `}>
+              <Text className={footerText}>{t("Auth.DontHaveAccount")}</Text>
               <TouchableOpacity
                 onPress={() => router.push("/Auth/Register")}
                 className="ml-2"
               >
-                <Text className={`font-bold ${linkText}`}>إنشاء حساب</Text>
+                <Text className={`font-bold ${linkText} px-3`}>{t("Auth.Register")}</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>

@@ -48,10 +48,10 @@ export default function RootLayout() {
         console.warn(e);
       }
     }
-    
+     
     handleSplashAndReady();
   }, [checkAndResetDailyHabits, cancelPastDueNotifications]);
-
+ 
   // ───── Onboarding redirect ─────
   useEffect(() => {
     if (!appIsReady) return;

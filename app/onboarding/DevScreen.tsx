@@ -4,13 +4,16 @@ import React from "react";
 import { router } from "expo-router";
 import { storage, STORAGE_KEYS } from "@/src/services/storage";
 import { useAppStore } from "../../store/useAppStore";
+import { useTranslation } from "react-i18next";
 
 const DevScreen = () => {
   const { isDarkMode } = useAppStore();
   const handleGetStarted = () => {
     storage.set(STORAGE_KEYS.hasSeenOnboarding, true);
-    router.replace("/Auth/Register");
+    router.replace("/onboarding/FaithScreen");
   };
+
+  const { t } = useTranslation();
 
   return (
     <View
@@ -26,7 +29,7 @@ const DevScreen = () => {
           source={require("../../assets/images/Dev.png")}
           className="w-72 h-72 rounded-[30px]"
           resizeMode="contain"
-        />
+        /> 
 
         {/* PLACE YOUR TITLE TEXT STYLES HERE */}
         <Text
@@ -35,7 +38,7 @@ const DevScreen = () => {
             (isDarkMode ? " text-dev-dark-interactive" : " text-dev-header")
           }
         >
-          انطلق في عالم التطوير
+          {t("onboarding.DevTitle")}
         </Text>
 
         {/* PLACE YOUR DESCRIPTION TEXT STYLES HERE */}
@@ -47,18 +50,23 @@ const DevScreen = () => {
               : " text-dev-header/70")
           }
         >
-          نظّم أوقات كتابة الكود، وتعلّم اللغات البرمجية المفضلة لديك لتصنع
-          أفكارك وتطبيقاتك الخاصة.{" "}
+          {t("onboarding.DevDesc")}
         </Text>
 
         {/* PLACE YOUR PAGE INDICATOR / DOTS HERE (last dot highlighted) */}
         <View className="flex-row mt-8">
           <View
             className={
-              "w-6 h-2 rounded-full mx-1" +
-              (isDarkMode ? " bg-dev-dark-interactive" : " bg-dev-header")
-            }
+              "w-2 h-2 rounded-full mx-1" +
+              (isDarkMode ? " bg-white" : " bg-black")
+            } 
           />
+            <View
+              className={
+                "w-6 h-2 rounded-full mx-1" +
+                (isDarkMode ? " bg-dev-dark-interactive" : " bg-dev-header")
+              }
+            />
           <View
             className={
               "w-2 h-2 rounded-full mx-1" +
@@ -80,7 +88,9 @@ const DevScreen = () => {
               " text-lg font-bold" +
               (isDarkMode ? " text-dev-header" : " text-white")
             }
-          >إبدأ الآن</Text>
+          >
+            {t("onboarding.Next")}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
