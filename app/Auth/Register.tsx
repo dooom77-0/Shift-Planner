@@ -75,8 +75,8 @@ export default function Register() {
       // Session is active immediately (email confirmation disabled)
       setAlert({
         visible: true,
-        title: "تم إنشاء الحساب",
-        description: "لقد تم إنشاء الحساب بنجاح.",
+        title: t("Alerts.seccussRegister"),
+        description: t("Alerts.seccussRegisterDesc"),
         type: "success",
         navigateTo: "/",
       });
@@ -84,8 +84,8 @@ export default function Register() {
       // Email confirmation required
       setAlert({
         visible: true,
-        title: "تم إنشاء الحساب",
-        description: "لقد تم إنشاء الحساب بنجاح.",
+        title: t("Alerts.seccussRegister"),
+        description: t("Alerts.seccussRegisterDesc"),
         type: "success",
         navigateTo: "/Auth/Login",
       });
@@ -95,7 +95,7 @@ export default function Register() {
     setError(message);
     setAlert({
       visible: true,
-      title: "فشل التسجيل",
+      title: t("Alerts.registerFailed"),
       description: message,
       type: "error",
     });

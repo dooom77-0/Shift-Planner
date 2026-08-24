@@ -62,17 +62,17 @@ export default function Login() {
 
       setAlert({
         visible: true,
-        title: "تم تسجيل الدخول",
-        description: "تم تسجيل الدخول بنجاح.",
+        title: t("Alerts.seccussLogin"),
+        description: t("Alerts.seccussLoginDesc"),
         type: "success",
         navigateTo: "/",
       });
     } catch (e: any) {
-      const message = e?.message || "فشل تسجيل الدخول";
+      const message = e?.message || t("Alerts.loginFailed");
       setError(message);
       setAlert({
         visible: true,
-        title: "فشل تسجيل الدخول",
+        title: t("Alerts.loginFailed"),
         description: message,
         type: "error",
       });

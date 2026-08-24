@@ -220,5 +220,15 @@
     "Register":"انشاء حساب",
     "AlreadyHaveAccount":"لديك حساب بالفعل؟",
     "DontHaveAccount":"ليس لديك حساب؟"
-  }
+  },
+"Alerts":{
+  "seccussLogin":"نجاح",
+  "seccussLoginDesc":"تم تسجيل الدخول بنجاح",
+  "loginFailed":"فشل تسجيل الدخول",
+  "loginFailedDesc":"يرجى التحقق من بيانات الدخول",
+  "registerSuccess":"نجاح",
+  "registerSuccessDesc":"تم إنشاء الحساب بنجاح",
+  "registerFailed":"فشل التسجيل",
+  "registerFailedDesc":"يرجى التحقق من بيانات التسجيل"
+}
 }

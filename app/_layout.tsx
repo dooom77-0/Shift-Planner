@@ -17,32 +17,27 @@ import {
   requestExactAlarmIfNeeded,
 } from "@/src/services/notificationService";
 
-// ❌ احذف السطر القديم من هنا تماماً لمنع فشل الـ Export
-
 export default function RootLayout() {
   const { setColorScheme } = useColorScheme();
   const { isDarkMode, checkAndResetDailyHabits, cancelPastDueNotifications } = useAppStore();
   const [appIsReady, setAppIsReady] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(true); // ✅ حالة انتهاء فحص المصادقة
 
   useEffect(() => {
     async function handleSplashAndReady() {
       try {
-        // ✅ انقل أمر المنع هنا داخل الـ useEffect ليكون آمناً أثناء البناء
         await SplashScreen.preventAutoHideAsync();
         
-        // تشغيل الـ Habits والـ Theme
         checkAndResetDailyHabits();
         cancelPastDueNotifications();
 
-        // تهيئة قناة الإشعارات عالية الأولوية + فحص إذن الـ Exact Alarm
         setupNotificationChannels().catch((e) =>
-          console.warn("Channel setup failed:", e),
+          console.warn("Channel setup failed:", e)
         );
         requestExactAlarmIfNeeded().catch((e) =>
-          console.warn("Exact alarm check failed:", e),
+          console.warn("Exact alarm check failed:", e)
         );
         
-        // الخدعة: نخفي سبلاش النظام فوراً ليظهر السبلاش المخصص حقك
         await SplashScreen.hideAsync();
       } catch (e) {
         console.warn(e);
@@ -51,16 +46,6 @@ export default function RootLayout() {
      
     handleSplashAndReady();
   }, [checkAndResetDailyHabits, cancelPastDueNotifications]);
- 
-  // ───── Onboarding redirect ─────
-  useEffect(() => {
-    if (!appIsReady) return;
-    const hasSeenOnboarding = storage.getBoolean(STORAGE_KEYS.hasSeenOnboarding);
-    if (!hasSeenOnboarding) {
-      router.replace("/onboarding/StuScreen");
-    }
-  }, [appIsReady]);
-  // ────────────────────────────────
 
   useEffect(() => {
     setColorScheme(isDarkMode ? "dark" : "light");
@@ -81,7 +66,6 @@ export default function RootLayout() {
           avatarUrl: (user.user_metadata?.avatar_url as string) ?? undefined,
         });
       } else {
-        // Signed out / no session: clear user-scoped data from the store
         useAppStore.getState().setUser(null);
       }
     };
@@ -91,28 +75,49 @@ export default function RootLayout() {
       .getSession()
       .then(({ data }) => {
         applySessionUser(data.session);
-        // Pull the latest profile row from the server (no-op when offline)
         useAppStore.getState().refreshProfileFromServer();
       })
-      .catch((e) => console.warn("Failed to restore auth session:", e));
+      .catch((e) => console.warn("Failed to restore auth session:", e))
+      .finally(() => {
+        if (active) setIsAuthLoading(false); // ✅ اكتمل فحص الجلسة بنجاح
+      });
 
-    // Keep the store in sync on login / logout / token refresh
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         applySessionUser(session);
         if (session?.user) {
-          // Reconcile with the server profile and flush any queued edits
-          // (also covers fresh sign-ins, not just cold starts)
           useAppStore.getState().refreshProfileFromServer();
           useAppStore.getState().syncPendingProfile();
         }
-      },
+      }
     );
     return () => {
       active = false;
       subscription.unsubscribe();
     };
   }, []);
+
+  // ───── Auth & Onboarding Routing Guard ─────
+useEffect(() => {
+  // 1. انتظر حتى يجهز التطبيق وتنتهي عملية الفحص الأولية للمصادقة
+  if (!appIsReady || isAuthLoading) return;
+
+  const user = useAppStore.getState().user;
+  const hasSeenOnboarding = storage.getBoolean(STORAGE_KEYS.hasSeenOnboarding);
+
+  // 2. إذا لم يشاهد الأونبوردنج
+  if (!hasSeenOnboarding) {
+    router.replace("/onboarding/StuScreen");
+    return;
+  }
+
+  // 3. التوجيه الذكي بناءً على حالة تسجيل الدخول
+  if (!user) {
+    router.replace("/Auth/Login");
+  } else {
+    router.replace("/");
+  }
+}, [appIsReady, isAuthLoading]);
 
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener(
@@ -136,12 +141,13 @@ export default function RootLayout() {
         } catch (e) {
           console.warn("Notification response handling error:", e);
         }
-      },
+      }
     );
     return () => sub.remove();
   }, []);
 
-  if (!appIsReady) {
+  // 🛑 إبقاء شاشة التحميل حتى تكتمل جميع الفحوصات
+  if (!appIsReady || isAuthLoading) {
     return <CustomSplashScreen onFinish={() => setAppIsReady(true)} />;
   }
 

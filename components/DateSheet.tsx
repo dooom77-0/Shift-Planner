@@ -11,7 +11,6 @@ import { useAppStore } from "../store/useAppStore";
 import { useModeTheme, useModeClasses } from "@/src/theme";
 import { useTranslation } from "react-i18next";
 import HabitRepeatSelector from "./HabitRepeatSelector";
-
 interface DateSheetProps {
   onSave: (date: Date, repeatData?: { type: "daily" | "weekly" | "custom"; days: string[] }) => void;
   initialDate?: Date;

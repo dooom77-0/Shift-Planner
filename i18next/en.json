@@ -220,5 +220,8 @@
     "Register":"Register",
     "AlreadyHaveAccount":"Already have an account?",
     "DontHaveAccount":"Don't have an account?"
-  }
+  },
+"Alerts":{
+  
+}
 }

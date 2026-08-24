@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { View, TouchableOpacity, Pressable } from "react-native";
 import Text from "@/src/components/ScaledText";
 import { useAppStore, Task, Priority } from "../store/useAppStore";
@@ -21,6 +21,7 @@ import { useModeClasses, useModeTheme } from "../src/theme";
 
 export default function Index() {
   const {
+    user,
     mode,
     tasks,
     habits,
@@ -30,6 +31,9 @@ export default function Index() {
     deleteSingleItem,
     language,
   } = useAppStore();
+
+
+  
 
   const mc = useModeClasses();
   const [selectedTab, setSelectedTab] = useState<"tasks" | "habits">("tasks");
@@ -58,6 +62,8 @@ export default function Index() {
   const progressRatio = totalItems === 0 ? 0 : completedItems / totalItems;
   const progressPercentage = Math.round(progressRatio * 100);
 
+  
+
   const progressLabel =
     mode === "study"
       ? progressPercentage === 100
@@ -84,6 +90,8 @@ export default function Index() {
       : mode === "coding"
         ? "header.modeTitleDev"
         : "header.modeTitleFaith";
+
+        
 
   // ترتيب حسب الاكتمال ثم الأولوية
   const sortByCompletionAndPriority = <
@@ -120,6 +128,8 @@ export default function Index() {
     type: "task" | "habit";
   } | null>(null);
 
+  
+
   const pendingOpenItem = useAppStore((s) => s.pendingOpenItem);
   const setPendingOpenItem = useAppStore((s) => s.setPendingOpenItem);
 
@@ -144,6 +154,8 @@ export default function Index() {
     detailsSheetRef.current?.present();
   };
 
+  
+
   const renderTasks = ({ item }: { item: Task }) => {
     const dateSource = item.dueDate
       ? new Date(item.dueDate)
@@ -165,6 +177,8 @@ export default function Index() {
           hour12: true,
         })
       : "";
+
+      
 
     return (
       <Pressable onPress={() => handleOpenDetails(item.id)}>
@@ -605,6 +619,17 @@ export default function Index() {
   const activeTabItems = selectedTab === "tasks" ? previewTasks : previewHabits;
 
   const { palette } = useModeTheme();
+
+  useEffect(() => {
+    if (!user) {
+      router.replace("/Auth/Login"); // 👈 وجهه لصفحة الدخول بدلاً من إبقائه في الصفحة الرئيسية
+    }
+  }, [user]);
+
+  // 3. منع حاشية الشاشة من الرندر مؤقتاً إذا كان غير مسجل لمنع الفلاش الأبيض:
+  if (!user) {
+    return null;
+  }
 
   return (
     <View
