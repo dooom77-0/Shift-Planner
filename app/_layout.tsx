@@ -3,7 +3,7 @@ import "../i18next/i18n";
 import { Stack, router } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useColorScheme } from "nativewind";
 import { useAppStore } from "@/store/useAppStore";
 import { supabase } from "@/supabase";
@@ -17,41 +17,40 @@ import {
   requestExactAlarmIfNeeded,
 } from "@/src/services/notificationService";
 
+// إبقاء السبلاش التابع للنظام ظاهراً حتى يجهز التطبيق
+SplashScreen.preventAutoHideAsync().catch(() => {});
+
 export default function RootLayout() {
   const { setColorScheme } = useColorScheme();
-  const { isDarkMode, checkAndResetDailyHabits, cancelPastDueNotifications } = useAppStore();
-  const [appIsReady, setAppIsReady] = useState(false);
-  const [isAuthLoading, setIsAuthLoading] = useState(true); // ✅ حالة انتهاء فحص المصادقة
+  const { isDarkMode, checkAndResetDailyHabits, cancelPastDueNotifications } =
+    useAppStore();
 
-  useEffect(() => {
-    async function handleSplashAndReady() {
-      try {
-        await SplashScreen.preventAutoHideAsync();
-        
-        checkAndResetDailyHabits();
-        cancelPastDueNotifications();
+  const [isSplashAnimationDone, setIsSplashAnimationDone] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const isMounted = useRef(false);
 
-        setupNotificationChannels().catch((e) =>
-          console.warn("Channel setup failed:", e)
-        );
-        requestExactAlarmIfNeeded().catch((e) =>
-          console.warn("Exact alarm check failed:", e)
-        );
-        
-        await SplashScreen.hideAsync();
-      } catch (e) {
-        console.warn(e);
-      }
-    }
-     
-    handleSplashAndReady();
-  }, [checkAndResetDailyHabits, cancelPastDueNotifications]);
-
+  // 1. التهيئة الأولية وتغيير الثيم
   useEffect(() => {
     setColorScheme(isDarkMode ? "dark" : "light");
   }, [isDarkMode, setColorScheme]);
 
-  // ───── Auth session → store binding ─────
+  useEffect(() => {
+    try {
+      checkAndResetDailyHabits();
+      cancelPastDueNotifications();
+
+      setupNotificationChannels().catch((e) =>
+        console.warn("Channel setup failed:", e),
+      );
+      requestExactAlarmIfNeeded().catch((e) =>
+        console.warn("Exact alarm check failed:", e),
+      );
+    } catch (e) {
+      console.warn("Init error:", e);
+    }
+  }, [checkAndResetDailyHabits, cancelPastDueNotifications]);
+
+  // 2. فحص المصادقة (Auth Session)
   useEffect(() => {
     let active = true;
     const applySessionUser = (session: Session | null) => {
@@ -70,7 +69,6 @@ export default function RootLayout() {
       }
     };
 
-    // Restore the persisted session on app start
     supabase.auth
       .getSession()
       .then(({ data }) => {
@@ -79,46 +77,45 @@ export default function RootLayout() {
       })
       .catch((e) => console.warn("Failed to restore auth session:", e))
       .finally(() => {
-        if (active) setIsAuthLoading(false); // ✅ اكتمل فحص الجلسة بنجاح
+        if (active) setIsAuthLoading(false);
       });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        applySessionUser(session);
-        if (session?.user) {
-          useAppStore.getState().refreshProfileFromServer();
-          useAppStore.getState().syncPendingProfile();
-        }
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      applySessionUser(session);
+      if (session?.user) {
+        useAppStore.getState().refreshProfileFromServer();
+        useAppStore.getState().syncPendingProfile();
       }
-    );
+    });
+
     return () => {
       active = false;
       subscription.unsubscribe();
     };
   }, []);
 
-  // ───── Auth & Onboarding Routing Guard ─────
-useEffect(() => {
-  // 1. انتظر حتى يجهز التطبيق وتنتهي عملية الفحص الأولية للمصادقة
-  if (!appIsReady || isAuthLoading) return;
+  // 3. التوجيه (Guard & Router) بعد انتهاء السبلاش والمصادقة
+  useEffect(() => {
+    // لا تنفذ التوجيه إلا إذا ركبت الـ Component وانتهى فحص المصادقة والـ Splash
+    if (!isSplashAnimationDone || isAuthLoading) return;
 
-  const user = useAppStore.getState().user;
-  const hasSeenOnboarding = storage.getBoolean(STORAGE_KEYS.hasSeenOnboarding);
+    const user = useAppStore.getState().user;
+    const hasSeenOnboarding = storage.getBoolean(
+      STORAGE_KEYS.hasSeenOnboarding,
+    );
 
-  // 2. إذا لم يشاهد الأونبوردنج
-  if (!hasSeenOnboarding) {
-    router.replace("/onboarding/StuScreen");
-    return;
-  }
+    if (!hasSeenOnboarding) {
+      router.replace("/onboarding/StuScreen");
+    } else if (!user) {
+      router.replace("/Auth/Login");
+    } else {
+      router.replace("/");
+    }
+  }, [isSplashAnimationDone, isAuthLoading]);
 
-  // 3. التوجيه الذكي بناءً على حالة تسجيل الدخول
-  if (!user) {
-    router.replace("/Auth/Login");
-  } else {
-    router.replace("/");
-  }
-}, [appIsReady, isAuthLoading]);
-
+  // 4. الإشعارات
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener(
       (response) => {
@@ -141,20 +138,26 @@ useEffect(() => {
         } catch (e) {
           console.warn("Notification response handling error:", e);
         }
-      }
+      },
     );
     return () => sub.remove();
   }, []);
 
-  // 🛑 إبقاء شاشة التحميل حتى تكتمل جميع الفحوصات
-  if (!appIsReady || isAuthLoading) {
-    return <CustomSplashScreen onFinish={() => setAppIsReady(true)} />;
-  }
-
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <BottomSheetModalProvider>
+        {/* نضمن رندر الـ Stack دائماً في الشجرة */}
         <Stack screenOptions={{ headerShown: false }} />
+
+        {/* عرض السبلاش المخصص فوق الـ Stack حتى ينتهي */}
+        {(!isSplashAnimationDone || isAuthLoading) && (
+          <CustomSplashScreen
+            onFinish={() => {
+              SplashScreen.hideAsync().catch(() => {});
+              setIsSplashAnimationDone(true);
+            }}
+          />
+        )}
       </BottomSheetModalProvider>
     </GestureHandlerRootView>
   );
